@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dashboard_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const RevrseApp());
@@ -280,6 +283,7 @@ void showMessage(BuildContext context, String message) {
     ..showSnackBar(SnackBar(content: Text(message)));
 }
 
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -291,13 +295,89 @@ class _LoginPageState extends State<LoginPage> {
   final formKey = GlobalKey<FormState>();
   final identity = TextEditingController();
   final password = TextEditingController();
+
   bool rememberMe = false;
+  bool isLoading = false;
+
+  // API URL for Flutter Web (Chrome)
+  final String apiUrl = 'http://localhost:5000/api/auth/login';
 
   @override
   void dispose() {
     identity.dispose();
     password.dispose();
     super.dispose();
+  }
+
+  Future<void> login() async {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'identity': identity.text.trim(),
+          'password': password.text,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final user = Map<String, dynamic>.from(data['user']);
+
+        // Keep the navigator before replacing this page.
+        final navigator = Navigator.of(context);
+
+        showMessage(context, 'Welcome to REVRSE!');
+
+        navigator.pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => DashboardScreen(
+              user: user,
+              onLogout: () {
+                navigator.pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const LoginPage(),
+                  ),
+                  (route) => false,
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        showMessage(
+          context,
+          data['message'] ?? 'Login failed. Please try again.',
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      showMessage(
+        context,
+        'Cannot connect to REVRSE server. Please check your connection.',
+      );
+
+      debugPrint('Login Error: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -310,6 +390,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             const Brand(),
             const SizedBox(height: 32),
+
             const Text(
               'Welcome back',
               textAlign: TextAlign.center,
@@ -319,20 +400,29 @@ class _LoginPageState extends State<LoginPage> {
                 color: revrseNavy,
               ),
             ),
+
             const SizedBox(height: 7),
+
             const Text(
               'Sign in and see the world from another view.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF71809B), fontSize: 13),
+              style: TextStyle(
+                color: Color(0xFF71809B),
+                fontSize: 13,
+              ),
             ),
+
             const SizedBox(height: 25),
+
             AuthTextField(
               hint: 'Email or Username',
               icon: Icons.mail_outline_rounded,
               controller: identity,
               validator: requiredField,
             ),
+
             const SizedBox(height: 13),
+
             AuthTextField(
               hint: 'Password',
               icon: Icons.lock_outline_rounded,
@@ -340,23 +430,40 @@ class _LoginPageState extends State<LoginPage> {
               password: true,
               validator: requiredField,
             ),
+
             const SizedBox(height: 3),
+
             Row(
               children: [
                 Checkbox(
                   value: rememberMe,
                   activeColor: revrseBlue,
-                  onChanged: (v) => setState(() => rememberMe = v ?? false),
+                  onChanged: isLoading
+                      ? null
+                      : (v) {
+                          setState(() {
+                            rememberMe = v ?? false;
+                          });
+                        },
                 ),
-                const Text('Remember me', style: TextStyle(fontSize: 12)),
+
+                const Text(
+                  'Remember me',
+                  style: TextStyle(fontSize: 12),
+                ),
+
                 const Spacer(),
+
                 TextButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ForgotPasswordPage(),
-                    ),
-                  ),
+                  onPressed: isLoading
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const ForgotPasswordPage(),
+                            ),
+                          ),
                   child: const Text(
                     'Forgot Password?',
                     style: TextStyle(fontSize: 12),
@@ -364,24 +471,27 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 10),
+
             PrimaryButton(
-              label: 'Sign In',
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  showMessage(
-                    context,
-                    'UI demo: connect login to your backend.',
-                  );
-                }
-              },
+              label: isLoading ? 'Signing In...' : 'Sign In',
+              onPressed: isLoading ? null : login,
             ),
+
             const SizedBox(height: 20),
+
             const _OrDivider(label: 'or continue with'),
+
             const SizedBox(height: 14),
+
             OutlinedButton.icon(
-              onPressed: () =>
-                  showMessage(context, 'Google sign-in is not connected yet.'),
+              onPressed: isLoading
+                  ? null
+                  : () => showMessage(
+                        context,
+                        'Google sign-in is not connected yet.',
+                      ),
               icon: const Icon(
                 Icons.g_mobiledata_rounded,
                 size: 28,
@@ -397,7 +507,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 18),
+
             Wrap(
               alignment: WrapAlignment.center,
               children: [
@@ -405,10 +517,13 @@ class _LoginPageState extends State<LoginPage> {
                   "Don't have an account? ",
                   style: TextStyle(fontSize: 13),
                 ),
+
                 GestureDetector(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const RegisterPage()),
+                    MaterialPageRoute(
+                      builder: (_) => const RegisterPage(),
+                    ),
                   ),
                   child: const Text(
                     'Create Account',
@@ -427,6 +542,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});

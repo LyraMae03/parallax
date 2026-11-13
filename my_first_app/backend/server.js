@@ -5,17 +5,23 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
 
+const authRoutes = require('./routes/authRoutes');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Test API
+// Home route
 app.get('/', (req, res) => {
     res.json({
-        message: 'REVRSE API is running!'
+        success: true,
+        message: 'Welcome to REVRSE API!'
     });
 });
+
+// Authentication routes
+app.use('/api/auth', authRoutes);
 
 // Test database
 app.get('/api/test-db', (req, res) => {
@@ -29,7 +35,6 @@ app.get('/api/test-db', (req, res) => {
 
         res.json({
             success: true,
-            message: 'Database connection successful!',
             database: results[0].database_name
         });
     });
@@ -38,5 +43,5 @@ app.get('/api/test-db', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`REVRSE Server running on port ${PORT}`);
+    console.log(`REVRSE API running on port ${PORT}`);
 });
