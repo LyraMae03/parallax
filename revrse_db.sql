@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 13, 2026 at 02:47 PM
+-- Generation Time: Nov 13, 2026 at 05:48 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -40,6 +40,13 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `profile_picture`, `bio`, `email_verified`, `account_status`, `created_at`, `updated_at`) VALUES
+(1, 'lyramae03', 'lyra.test@example.com', '$2b$10$CgML0q4rK4w0wKZSofSqB.ousSq9/X5ZyJPXg6BZzU02DZCLY.jcS', 'Lyra Mae Borling', NULL, NULL, 0, 'active', '2026-11-13 15:40:22', '2026-11-13 15:40:22');
 
 -- --------------------------------------------------------
 
@@ -82,7 +89,7 @@ ALTER TABLE `user_sessions`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `user_sessions`
